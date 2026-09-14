@@ -7,12 +7,8 @@ pub struct FrequencyBands {
 }
 
 impl FrequencyBands {
-    pub fn new(count: usize, sample_rate: f32, fft_size: usize) -> Self {
-        let max_frequency = (sample_rate / 2.0).min(20_000.0);
-
-        let max_frequency = max_frequency.max(20.0);
-
-        let _ = fft_size;
+    pub fn new(count: usize, sample_rate: f32, _fft_size: usize) -> Self {
+        let max_frequency = (sample_rate / 2.0).min(20_000.0).max(20.0);
 
         Self {
             count,
@@ -23,8 +19,10 @@ impl FrequencyBands {
 
     pub fn analyze(&self, spectrum: &[Complex<f32>], sample_rate: f32) -> Vec<f32> {
         let fft_size = spectrum.len();
-
         let mut bands = vec![0.0; self.count];
+        let mut counts = vec![0usize; self.count];
+
+        let log_range = (self.max_frequency / self.min_frequency).ln();
 
         for (bin, value) in spectrum.iter().enumerate().skip(1) {
             let frequency = bin as f32 * sample_rate / fft_size as f32;
@@ -33,18 +31,20 @@ impl FrequencyBands {
                 continue;
             }
 
-            let normalized = (frequency / self.min_frequency).ln()
-                / (self.max_frequency / self.min_frequency).ln();
+            let normalized = (frequency / self.min_frequency).ln() / log_range;
 
             let index = (normalized * self.count as f32) as usize;
 
             if index < self.count {
-                bands[index] += value.norm();
+                bands[index] += value.norm_sqr();
+                counts[index] += 1;
             }
         }
 
-        for band in &mut bands {
-            *band = (*band).sqrt();
+        for (band, count) in bands.iter_mut().zip(counts) {
+            if count > 0 {
+                *band = (*band / count as f32).sqrt();
+            }
         }
 
         bands
