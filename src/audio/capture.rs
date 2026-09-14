@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use cpal::{
-    traits::{DeviceTrait, HostTrait, StreamTrait},
     SampleFormat, Stream, StreamConfig,
+    traits::{DeviceTrait, HostTrait, StreamTrait},
 };
 use std::sync::mpsc::{self, Receiver, Sender};
 

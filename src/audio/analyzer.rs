@@ -12,6 +12,7 @@ pub struct Analyzer {
     bands: FrequencyBands,
     smoother: Smoother,
     sample_rate: f32,
+    mono: Vec<f32>,
 }
 
 impl Analyzer {
@@ -21,34 +22,43 @@ impl Analyzer {
             bands: FrequencyBands::new(band_count, sample_rate, fft_size),
             smoother: Smoother::new(band_count, 0.45, 0.12),
             sample_rate,
+            mono: Vec::with_capacity(fft_size),
         }
     }
 
     pub fn process(&mut self, samples: &[f32]) -> Option<VisualizerFrame> {
-        self.fft.push(samples);
+        if samples.len() < 2 {
+            return None;
+        }
+
+        self.mono.clear();
+
+        for chunk in samples.chunks_exact(2) {
+            self.mono.push((chunk[0] + chunk[1]) * 0.5);
+        }
+
+        let rms = (self.mono.iter().map(|sample| sample * sample).sum::<f32>()
+            / self.mono.len() as f32)
+            .sqrt();
+
+        let peak = self
+            .mono
+            .iter()
+            .map(|sample| sample.abs())
+            .fold(0.0_f32, f32::max);
+
+        self.fft.push(&self.mono);
 
         let spectrum = self.fft.analyze()?;
 
         let bands = self.bands.analyze(spectrum, self.sample_rate);
 
-        let bands = self.smoother.process(&bands);
-
-        let rms = if samples.is_empty() {
-            0.0
-        } else {
-            (samples.iter().map(|sample| sample * sample).sum::<f32>() / samples.len() as f32)
-                .sqrt()
-        };
-
-        let peak = samples
-            .iter()
-            .map(|sample| sample.abs())
-            .fold(0.0_f32, f32::max);
+        let bands = self.smoother.process(&bands).to_vec();
 
         let active = rms > 0.005 || peak > 0.02;
 
         Some(VisualizerFrame {
-            bands: bands.to_vec(),
+            bands,
             rms,
             peak,
             active,

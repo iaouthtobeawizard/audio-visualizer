@@ -12,14 +12,22 @@ impl TerminalRenderer {
     pub fn render(&self, frame: &VisualizerFrame) {
         print!("\x1b[2J\x1b[H");
 
-        println!("notch-visualizer");
+        println!("audio-visualizer");
         println!();
+
+        let max_band = frame.bands.iter().copied().fold(0.0_f32, f32::max);
+
+        let scale = if max_band > 0.00001 {
+            1.0 / max_band
+        } else {
+            0.0
+        };
 
         for row in (0..self.height).rev() {
             for &band in &frame.bands {
-                let level = (band * 8.0).clamp(0.0, self.height as f32) as usize;
+                let level = band * scale * self.height as f32;
 
-                if level > row {
+                if level > row as f32 {
                     print!("█ ");
                 } else {
                     print!("  ");
