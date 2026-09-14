@@ -1,33 +1,23 @@
 # Audio Visualizer
 
-A native Rust audio visualizer engine designed to provide real-time frequency
-analysis for desktop applications.
+A native Rust audio visualizer engine that captures system audio through PipeWire, performs real-time FFT analysis, converts the spectrum into logarithmic frequency bands, and applies smoothing for responsive visualization.
 
-The project is standalone and does not depend on any particular UI framework.
 
 ## Architecture
 
 ```text
-Audio Source
-     │
-     ▼
-Audio Capture
-     │
-     ▼
-    PCM
-     │
-     ▼
-    FFT
-     │
-     ▼
+PipeWire
+   ↓
+System Audio Capture
+   ↓
+Stereo → Mono
+   ↓
+FFT
+   ↓
 Frequency Bands
-     │
-     ▼
-Smoothing
-     │
-     ▼
+   ↓
+Attack / Decay Smoothing
+   ↓
 VisualizerFrame
-     │
-     ├── Terminal
-     ├── IPC
-     └── Other clients
+   ↓
+Output / IPC
