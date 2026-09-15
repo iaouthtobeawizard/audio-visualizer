@@ -1,5 +1,7 @@
 use crate::audio::analyzer::VisualizerFrame;
 
+use super::VisualizerOutput;
+
 pub struct TerminalRenderer {
     height: usize,
 }
@@ -8,8 +10,10 @@ impl TerminalRenderer {
     pub fn new(height: usize) -> Self {
         Self { height }
     }
+}
 
-    pub fn render(&self, frame: &VisualizerFrame) {
+impl VisualizerOutput for TerminalRenderer {
+    fn render(&self, frame: &VisualizerFrame) {
         print!("\x1b[2J\x1b[H");
 
         println!("audio-visualizer");
