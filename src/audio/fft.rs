@@ -1,4 +1,4 @@
-use rustfft::{FftPlanner, num_complex::Complex};
+use rustfft::{num_complex::Complex, FftPlanner};
 use std::sync::Arc;
 
 pub struct FftAnalyzer {
@@ -37,18 +37,10 @@ impl FftAnalyzer {
         }
     }
 
-    pub fn ready(&self) -> bool {
-        self.buffer.iter().any(|sample| sample.re != 0.0)
-    }
-
-    pub fn analyze(&mut self) -> Option<&[Complex<f32>]> {
-        if !self.ready() {
-            return None;
-        }
-
+    pub fn analyze(&mut self) -> &[Complex<f32>] {
         self.fft.process(&mut self.buffer);
 
-        Some(&self.buffer)
+        &self.buffer
     }
 
     pub fn size(&self) -> usize {

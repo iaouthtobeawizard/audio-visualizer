@@ -1,10 +1,11 @@
 use super::{bands::FrequencyBands, fft::FftAnalyzer, smoothing::Smoother};
+use serde::Serialize;
 
+#[derive(Clone, Serialize)]
 pub struct VisualizerFrame {
     pub bands: Vec<f32>,
     pub rms: f32,
     pub peak: f32,
-    pub active: bool,
 }
 
 pub struct Analyzer {
@@ -49,19 +50,12 @@ impl Analyzer {
 
         self.fft.push(&self.mono);
 
-        let spectrum = self.fft.analyze()?;
+        let spectrum = self.fft.analyze();
 
         let bands = self.bands.analyze(spectrum, self.sample_rate);
 
         let bands = self.smoother.process(&bands).to_vec();
 
-        let active = rms > 0.005 || peak > 0.02;
-
-        Some(VisualizerFrame {
-            bands,
-            rms,
-            peak,
-            active,
-        })
+        Some(VisualizerFrame { bands, rms, peak })
     }
 }

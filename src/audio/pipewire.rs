@@ -12,7 +12,6 @@ pub struct PipeWireCapture {
 struct UserData {
     sender: Sender<Vec<f32>>,
     format: spa::param::audio::AudioInfoRaw,
-    buffers: usize,
 }
 
 impl PipeWireCapture {
@@ -20,9 +19,7 @@ impl PipeWireCapture {
         let (sender, receiver) = mpsc::channel();
 
         let thread = std::thread::spawn(move || {
-            if let Err(error) = run_pipewire(sender) {
-                eprintln!("PipeWire capture error: {error}");
-            }
+            let _ = run_pipewire(sender);
         });
 
         Ok(Self {
@@ -42,7 +39,9 @@ fn run_pipewire(sender: Sender<Vec<f32>>) -> Result<()> {
     pw::init();
 
     let mainloop = pw::main_loop::MainLoopRc::new(None)?;
+
     let context = pw::context::ContextRc::new(&mainloop, None)?;
+
     let core = context.connect_rc(None)?;
 
     let props = properties! {
@@ -57,14 +56,10 @@ fn run_pipewire(sender: Sender<Vec<f32>>) -> Result<()> {
     let data = UserData {
         sender,
         format: Default::default(),
-        buffers: 0,
     };
 
     let _listener = stream
         .add_local_listener_with_user_data(data)
-        .state_changed(|_, _, old, new| {
-            println!("PipeWire state: {:?} -> {:?}", old, new);
-        })
         .param_changed(|_, user_data, id, param| {
             let Some(param) = param else {
                 return;
@@ -74,20 +69,10 @@ fn run_pipewire(sender: Sender<Vec<f32>>) -> Result<()> {
                 return;
             }
 
-            if let Err(error) = user_data.format.parse(param) {
-                eprintln!("Failed to parse audio format: {error}");
-                return;
-            }
-
-            println!(
-                "PipeWire format: {} Hz, {} channels",
-                user_data.format.rate(),
-                user_data.format.channels()
-            );
+            let _ = user_data.format.parse(param);
         })
         .process(|stream, user_data| {
             let Some(mut buffer) = stream.dequeue_buffer() else {
-                println!("PipeWire: out of buffers");
                 return;
             };
 
@@ -102,22 +87,6 @@ fn run_pipewire(sender: Sender<Vec<f32>>) -> Result<()> {
             let Some(bytes) = data.data() else {
                 return;
             };
-
-            user_data.buffers += 1;
-
-            if user_data.buffers % 100 == 0 {
-                let peak = bytes
-                    .chunks_exact(4)
-                    .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]).abs())
-                    .fold(0.0_f32, f32::max);
-
-                println!(
-                    "PipeWire buffers: {} | bytes: {} | peak: {:.5}",
-                    user_data.buffers,
-                    bytes.len(),
-                    peak
-                );
-            }
 
             let samples: Vec<f32> = bytes
                 .chunks_exact(4)
@@ -138,7 +107,7 @@ fn run_pipewire(sender: Sender<Vec<f32>>) -> Result<()> {
         properties: audio_info.into(),
     };
 
-    let values: Vec<u8> = pw::spa::pod::serialize::PodSerializer::serialize(
+    let values = pw::spa::pod::serialize::PodSerializer::serialize(
         std::io::Cursor::new(Vec::new()),
         &pw::spa::pod::Value::Object(obj),
     )
@@ -156,8 +125,6 @@ fn run_pipewire(sender: Sender<Vec<f32>>) -> Result<()> {
             | pw::stream::StreamFlags::RT_PROCESS,
         &mut params,
     )?;
-
-    println!("Connected to PipeWire sink monitor");
 
     mainloop.run();
 
