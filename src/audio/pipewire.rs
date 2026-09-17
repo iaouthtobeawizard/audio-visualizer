@@ -88,9 +88,11 @@ fn run_pipewire(sender: Sender<Vec<f32>>) -> Result<()> {
                 return;
             };
 
-            let samples: Vec<f32> = bytes
-                .chunks_exact(4)
-                .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
+            let (chunks, _) = bytes.as_chunks::<4>();
+
+            let samples: Vec<f32> = chunks
+                .iter()
+                .map(|chunk| f32::from_le_bytes(*chunk))
                 .collect();
 
             let _ = user_data.sender.send(samples);

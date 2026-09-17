@@ -1,4 +1,4 @@
-use rustfft::{num_complex::Complex, FftPlanner};
+use rustfft::{FftPlanner, num_complex::Complex};
 use std::sync::Arc;
 
 pub struct FftAnalyzer {
@@ -41,9 +41,5 @@ impl FftAnalyzer {
         self.fft.process(&mut self.buffer);
 
         &self.buffer
-    }
-
-    pub fn size(&self) -> usize {
-        self.size
     }
 }

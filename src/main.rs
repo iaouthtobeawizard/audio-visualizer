@@ -8,7 +8,7 @@ use audio::{analyzer::Analyzer, pipewire::PipeWireCapture};
 
 use config::Config;
 
-use output::{ipc::IpcOutput, terminal::TerminalRenderer, VisualizerOutput};
+use output::{VisualizerOutput, ipc::IpcOutput, terminal::TerminalRenderer};
 
 fn main() -> Result<()> {
     let config = Config::default();

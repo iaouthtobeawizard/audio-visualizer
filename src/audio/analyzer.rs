@@ -41,7 +41,9 @@ impl Analyzer {
 
         self.mono.clear();
 
-        for chunk in samples.chunks_exact(2) {
+        let (chunks, _) = samples.as_chunks::<2>();
+
+        for chunk in chunks {
             self.mono.push((chunk[0] + chunk[1]) * 0.5);
         }
 

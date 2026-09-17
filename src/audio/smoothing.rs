@@ -26,8 +26,4 @@ impl Smoother {
 
         &self.values
     }
-
-    pub fn values(&self) -> &[f32] {
-        &self.values
-    }
 }
