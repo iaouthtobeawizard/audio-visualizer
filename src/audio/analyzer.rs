@@ -17,11 +17,18 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
-    pub fn new(fft_size: usize, band_count: usize, sample_rate: f32) -> Self {
+    pub fn new(
+        fft_size: usize,
+        band_count: usize,
+        sample_rate: f32,
+        attack: f32,
+        decay: f32,
+        sensitivity: f32,
+    ) -> Self {
         Self {
             fft: FftAnalyzer::new(fft_size),
-            bands: FrequencyBands::new(band_count, sample_rate, fft_size),
-            smoother: Smoother::new(band_count, 0.45, 0.12),
+            bands: FrequencyBands::new(band_count, sample_rate, fft_size, sensitivity),
+            smoother: Smoother::new(band_count, attack, decay),
             sample_rate,
             mono: Vec::with_capacity(fft_size),
         }

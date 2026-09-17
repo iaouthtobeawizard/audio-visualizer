@@ -9,7 +9,7 @@ pub struct TerminalRenderer {
 
 impl TerminalRenderer {
     pub fn new(height: usize) -> Self {
-        Self { height, scale: 0.5 }
+        Self { height, scale: 0.8 }
     }
 }
 

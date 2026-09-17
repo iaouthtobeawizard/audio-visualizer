@@ -4,19 +4,21 @@ pub struct FrequencyBands {
     count: usize,
     min_frequency: f32,
     max_frequency: f32,
+    gain: f32,
 }
 
 impl FrequencyBands {
-    pub fn new(count: usize, sample_rate: f32, _fft_size: usize) -> Self {
+    pub fn new(count: usize, sample_rate: f32, _fft_size: usize, gain: f32) -> Self {
         Self {
             count,
             min_frequency: 20.0,
             max_frequency: (sample_rate / 2.0).min(20_000.0),
+            gain,
         }
     }
 
     pub fn analyze(&self, spectrum: &[Complex<f32>], sample_rate: f32) -> Vec<f32> {
-        let mut bands = vec![0.0_f32; self.count];
+        let mut bands = vec![0.0; self.count];
 
         if spectrum.is_empty() {
             return bands;
@@ -34,21 +36,19 @@ impl FrequencyBands {
                 continue;
             }
 
-            let log_position = (frequency.ln() - min_log) / (max_log - min_log);
+            let position = (frequency.ln() - min_log) / (max_log - min_log);
 
-            let index = (log_position * self.count as f32) as usize;
+            let index = (position * self.count as f32) as usize;
 
             if index >= self.count {
                 continue;
             }
 
-            let magnitude = spectrum[bin].norm_sqr();
-
-            bands[index] += magnitude;
+            bands[index] += spectrum[bin].norm();
         }
 
         for band in &mut bands {
-            *band = band.sqrt();
+            *band = (*band * self.gain).sqrt();
         }
 
         bands
