@@ -16,3 +16,7 @@ pipewire = "0.10.1"
 lto = true
 codegen-units = 1
 strip = true
+
+[lib]
+name = "audio_visualizer"
+path = "src/lib.rs"
